@@ -9,8 +9,23 @@ class AI(Entity):
         self._stats_file_name = 'ai.stats'
         self._wins = 0
         self._loses = 0
-        self._attack_rate = 1.0
-        self._defend_rate = 1.0
+        self._attack_parts = {
+            'attack-head': 1.0,
+            'attack-body': 1.0,
+            'attack-left_hand': 1.0,
+            'attack-right_hand': 1.0,
+            'attack-left_foot': 1.0,
+            'attack-right_foot': 1.0,
+        }
+
+        self._defend_parts = {
+            'defend-head': 1.0,
+            'defend-body': 1.0,
+            'defend-left_hand': 1.0,
+            'defend-right_hand': 1.0,
+            'defend-left_foot': 1.0,
+            'defend-right_foot': 1.0,
+        }
         self._read_stats()
 
     def __del__(self):
@@ -24,43 +39,36 @@ class AI(Entity):
                     self._wins = int(value)
                 elif status == 'loses':
                     self._loses = int(value)
-                elif status == 'attack_rate':
-                    self._attack_rate = float(value)
-                elif status == 'defend_rate':
-                    self._defend_rate = float(value)
+                elif status in self._attack_parts.keys():
+                    self._attack_parts[status] = float(value)
+                elif status in self._defend_parts.keys():
+                    self._defend_parts[status] = float(value)
 
     def _write_stats(self):
         with open('ai.stats', 'w') as f:
-            f.write(f'wins {self._wins}\n'
-                    f'loses {self._loses}\n'
-                    f'attack_rate {self._attack_rate}\n'
-                    f'defend_rate {self._defend_rate}')
+            data = f'wins {self._wins}\n' \
+                   f'loses {self._loses}\n'
+            for key, value in self._attack_parts.items():
+                data += f'{key} {value}\n'
+            for key, value in self._defend_parts.items():
+                data += f'{key} {value}\n'
+            f.write(data)
 
-    # Собственно псевдо разум нашего псевдо ИИ.
-    def update_stats(self, is_winner):
-        if is_winner:
-            self._wins += 1
-            if (self._wins - self._loses) < 5:  # Если мы выиграли 5 раз подряд, то ничего не делаем
-                if self._attack_rate < self._defend_rate:  # Если наши победы благодаря тому, что у нас высокий критерий защиты, то давайте его увеличим
-                    self._defend_rate += 0.1
-                else:  # Если же все это благодаря атаке, то нарастим ее.
-                    self._attack_rate += 0.1
-        else:
-            self._loses += 1
-            if (self._wins - self._loses) < 5:
-                if self._defend_rate < self._attack_rate:
-                    self._defend_rate += 0.1
-                else:
-                    self._attack_rate += 0.1
+    def update_stats(self, enemy):
+        part = enemy.attack_part
+        key = f'defend-{part}'
+        print(key)
+        self._defend_parts[key] += 0.1
+
+        if self.attack_part != enemy.defend_part:
+            key = f'attack-{self.attack_part}'
+            self._attack_parts[key] += 0.1
 
     def turn(self, enemy):
-        result = random.choices(['attack', 'defend'], [self._attack_rate, self._defend_rate])
-        result = result[0]
-        if result == 'attack':
-            self._attack(enemy)
-        else:
-            self._defend()
+        attack_part = random.choices(self._body_parts, tuple(self._attack_parts.values()))
+        block_part = random.choices(self._body_parts, tuple(self._defend_parts.values()))
+        attack_part_choice = attack_part[0]
+        block_part_choice = block_part[0]
 
-
-# ДЗ
-# str rjust, ljust
+        self.defend(block_part_choice)
+        self.attack(enemy, attack_part_choice)

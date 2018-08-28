@@ -1,20 +1,21 @@
 from entity import Entity
 from ai import AI
 
-player = Entity('Игрок', damage=25)
+player = Entity('Игрок', damage=10)
 ai = AI('ИИ')
 
-games_count = 100
+games_count = 1
 
 for _ in range(games_count):
     while player.health > 0 and ai.health > 0:
         player.turn(ai)
         ai.turn(player)
+        ai.update_stats(player)
 
     if player.health > 0:
-        ai.update_stats(is_winner=False)
+        print('Победа за игроком')
     elif player.health <= 0:
-        ai.update_stats(is_winner=True)
+        print('Победа за ИИ')
     else:
         print('Ничья')
 
